@@ -33,6 +33,8 @@ In order for the comparison to make any sense, the Quarkus application was devel
 
 ## The test environment
 
+The following diagram represents the test environment.
+
 ![Test environment](docs/img/test-environment.png)
 
 Specifically, the test environment consists of the following components:
@@ -44,7 +46,7 @@ Specifically, the test environment consists of the following components:
 
 ## Running the experiment
 
-Reproducing the experiment _should_ as easy as running
+Reproducing the experiment _should_ be as easy as running
 
 ```bash
 docker-compose up
