@@ -1,0 +1,5 @@
+#!/bin/sh
+
+mvn clean test -P local -D 'DATASOURCE_DB_KIND=h2'
+mvn clean checkstyle:check -D 'DATASOURCE_DB_KIND=h2' -P local -P with-code-analysis || exit 1
+mvn clean spotbugs:check -D 'DATASOURCE_DB_KIND=h2' -P local -P with-code-analysis || exit 1

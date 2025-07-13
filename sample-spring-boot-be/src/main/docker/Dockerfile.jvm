@@ -1,0 +1,7 @@
+FROM maven:3.9-amazoncorretto-17-alpine AS build
+COPY . .
+RUN mvn clean package -P !with-code-analysis -P with-observability -P mariadb -D skipTests=true
+
+FROM openjdk:17 AS run
+COPY --from=build sample-spring-boot-be-application/target/*.jar app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]

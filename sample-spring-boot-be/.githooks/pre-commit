@@ -1,0 +1,5 @@
+#!/bin/sh
+
+mvn clean test -P local
+mvn clean checkstyle:check  -P local,with-code-analysis || exit 1
+mvn clean spotbugs:check  -P local,with-code-analysis || exit 1

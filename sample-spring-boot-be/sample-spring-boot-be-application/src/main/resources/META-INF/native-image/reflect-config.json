@@ -1,0 +1,16 @@
+[
+  {
+    "name": "com.ibm.it.meledina.tommaso.sample.spring.boot.application.repository.SnakeCasePhysicalNamingStrategy",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.ibm.it.meledina.tommaso.sample.spring.boot.application.mapper.DummyMapperImpl",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  }
+]

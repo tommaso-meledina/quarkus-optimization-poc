@@ -1,0 +1,274 @@
+version: '3.8'
+
+services:
+
+  mariadb:
+      container_name: mariadb
+      image: mariadb:11
+      ports:
+        - "3306:3306"
+      environment:
+        - MARIADB_DATABASE=${DATABASE_NAME}
+        - MARIADB_USER=${DATASOURCE_USER}
+        - MARIADB_PASSWORD=${DATASOURCE_PASSWORD}
+        - MYSQL_ROOT_PASSWORD=${DATASOURCE_PASSWORD}
+      volumes:
+        - mariadb-etc:/etc/mysql
+        - mariadb-data:/var/lib/mysql/data
+      healthcheck:
+        test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+        start_period: 10s
+        interval: 10s
+        timeout: 5s
+        retries: 3
+      networks:
+        - quarkus-optimization-poc
+
+  sample-spring-be:
+    build:
+      context: ${SAMPLE_SPRING_BOOT_BE_CONTEXT_PATH}
+      dockerfile: ${SAMPLE_SPRING_BOOT_BE_DOCKERFILE_PATH}
+    container_name: sample-spring-be
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/sample-backend/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 10s
+    environment:
+      - DATASOURCE_URL=jdbc:mariadb://mariadb/${DATABASE_NAME}
+      - DATASOURCE_DRIVER_CLASSNAME=${DATASOURCE_DRIVER_CLASSNAME}
+      - DATASOURCE_USERNAME=${DATASOURCE_USER}
+      - DATASOURCE_PASSWORD=${DATASOURCE_PASSWORD}
+#      - spring.sql.init.data-locations=${DUMMY_DATA_LOCATION}
+#      - spring.sql.init.schema-locations=${SCHEMA_LOCATION}
+      - TRACING_OTLP_ENDPOINT=http://otel-collector:4318
+      - SERVER_PORT=8080
+      - APPLICATION_NAME=sample-spring-be
+    networks:
+      - quarkus-optimization-poc
+    volumes:
+      - ./BE/init:/init
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  sample-quarkus-be:
+    build:
+      context: ${SAMPLE_QUARKUS_BE_CONTEXT_PATH}
+      dockerfile: ${SAMPLE_QUARKUS_BE_DOCKERFILE_PATH}
+    container_name: sample-quarkus-be
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/q/health/ready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 10s
+    environment:
+      - DATASOURCE_DB_KIND=mariadb
+      - DATASOURCE_URL=jdbc:mariadb://mariadb/${DATABASE_NAME}
+      - DATASOURCE_USERNAME=${DATASOURCE_USER}
+      - DATASOURCE_PASSWORD=${DATASOURCE_PASSWORD}
+      - SHOULD_MIGRATE_AT_START=true
+      - HTTP_PORT=8081
+      - OPENTELEMETRY_ENABLED=true
+      - TRACING_OTLP_ENDPOINT=http://otel-collector:4317
+      - TRACING_OTLP_PROTOCOL=grpc
+      - APPLICATION_NAME=sample-quarkus-be
+    networks:
+      - quarkus-optimization-poc
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  sample-quarkus-native-be:
+    build:
+      context: ${SAMPLE_QUARKUS_BE_CONTEXT_PATH}
+      dockerfile: ${SAMPLE_QUARKUS_NATIVE_BE_DOCKERFILE_PATH}
+    container_name: sample-quarkus-native-be
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8082/q/health/ready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 10s
+    environment:
+      - DATASOURCE_DB_KIND=mariadb
+      - DATASOURCE_URL=jdbc:mariadb://mariadb/${DATABASE_NAME}
+      - DATASOURCE_USERNAME=${DATASOURCE_USER}
+      - DATASOURCE_PASSWORD=${DATASOURCE_PASSWORD}
+      - SHOULD_MIGRATE_AT_START=true
+      - HTTP_PORT=8082
+      - OPENTELEMETRY_ENABLED=true
+      - TRACING_OTLP_ENDPOINT=http://otel-collector:4317
+      - TRACING_OTLP_PROTOCOL=grpc
+      - APPLICATION_NAME=sample-quarkus-native-be
+    networks:
+      - quarkus-optimization-poc
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  sample-spring-native-be:
+    build:
+      context: ${SAMPLE_SPRING_BOOT_BE_CONTEXT_PATH}
+      dockerfile: ${SAMPLE_SPRING_BOOT_NATIVE_BE_DOCKERFILE_PATH}
+    container_name: sample-spring-native-be
+    ports:
+      - "8083:8083"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8083/sample-backend/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 10s
+    environment:
+      - DATASOURCE_URL=jdbc:mariadb://mariadb/${DATABASE_NAME}
+      - DATASOURCE_DRIVER_CLASSNAME=${DATASOURCE_DRIVER_CLASSNAME}
+      - DATASOURCE_USERNAME=${DATASOURCE_USER}
+      - DATASOURCE_PASSWORD=${DATASOURCE_PASSWORD}
+#      - spring.sql.init.data-locations=${DUMMY_DATA_LOCATION}
+#      - spring.sql.init.schema-locations=${SCHEMA_LOCATION}
+      - TRACING_OTLP_ENDPOINT=http://otel-collector:4318
+      - SERVER_PORT=8083
+      - APPLICATION_NAME=sample-spring-native-be
+    networks:
+      - quarkus-optimization-poc
+    volumes:
+      - ./BE/init:/init
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      GF_SERVER_HTTP_PORT: 3001
+    networks:
+      - quarkus-optimization-poc
+    ports:
+      - '3001:3001'
+    volumes:
+      - ./observability/grafana/storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one:latest
+    restart: always
+    networks:
+      - quarkus-optimization-poc
+    ports:
+      - "16686:16686"
+      - "14268"
+      - "14250"
+
+  otel-collector:
+    image: ${OTELCOL_IMG}
+    restart: always
+    command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "1888:1888"   # pprof extension
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "13133:13133" # health_check extension
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "55679:55679" # zpages extension
+    networks:
+      - quarkus-optimization-poc
+    depends_on:
+      - jaeger-all-in-one
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    restart: always
+    volumes:
+      - ./observability/prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - quarkus-optimization-poc
+
+  locust-spring:
+    image: locustio/locust
+    volumes:
+      - ./locust:/mnt/locust
+    working_dir: /mnt/locust
+    command: -f locustfile.py --headless -u ${LOCUST_TEST_N_USERS} -r ${LOCUST_TEST_RAMP_UP_SLOPE} --run-time ${LOCUST_TEST_DURATION_MINUTES}m
+    environment:
+      - INITIAL_SLEEP_TIME_SECONDS=${LOCUST_TEST_INITIAL_SLEEP_SECONDS}
+      - TARGET_ENDPOINT=http://sample-spring-be:8080
+      - TARGET_GET_PATH=/sample-backend/dummies
+    networks:
+      - quarkus-optimization-poc
+    depends_on:
+      sample-spring-be:
+        condition: service_healthy
+
+  locust-quarkus:
+    image: locustio/locust
+    volumes:
+      - ./locust:/mnt/locust
+    working_dir: /mnt/locust
+    command: -f locustfile.py --headless -u ${LOCUST_TEST_N_USERS} -r ${LOCUST_TEST_RAMP_UP_SLOPE} --run-time ${LOCUST_TEST_DURATION_MINUTES}m
+    environment:
+      - INITIAL_SLEEP_TIME_SECONDS=${LOCUST_TEST_INITIAL_SLEEP_SECONDS}
+      - TARGET_ENDPOINT=http://sample-quarkus-be:8081
+      - TARGET_GET_PATH=/sample-backend/dummies
+    networks:
+      - quarkus-optimization-poc
+    depends_on:
+      sample-quarkus-be:
+        condition: service_healthy
+
+  locust-quarkus-native:
+    image: locustio/locust
+    volumes:
+      - ./locust:/mnt/locust
+    working_dir: /mnt/locust
+    command: -f locustfile.py --headless -u ${LOCUST_TEST_N_USERS} -r ${LOCUST_TEST_RAMP_UP_SLOPE} --run-time ${LOCUST_TEST_DURATION_MINUTES}m
+    environment:
+      - INITIAL_SLEEP_TIME_SECONDS=${LOCUST_TEST_INITIAL_SLEEP_SECONDS}
+      - TARGET_ENDPOINT=http://sample-quarkus-native-be:8082
+      - TARGET_GET_PATH=/sample-backend/dummies
+    networks:
+      - quarkus-optimization-poc
+    depends_on:
+      sample-quarkus-native-be:
+        condition: service_healthy
+
+  locust-spring-native:
+    image: locustio/locust
+    volumes:
+      - ./locust:/mnt/locust
+    working_dir: /mnt/locust
+    command: -f locustfile.py --headless -u ${LOCUST_TEST_N_USERS} -r ${LOCUST_TEST_RAMP_UP_SLOPE} --run-time ${LOCUST_TEST_DURATION_MINUTES}m
+    environment:
+      - INITIAL_SLEEP_TIME_SECONDS=${LOCUST_TEST_INITIAL_SLEEP_SECONDS}
+      - TARGET_ENDPOINT=http://sample-spring-native-be:8083
+      - TARGET_GET_PATH=/sample-backend/dummies
+    networks:
+      - quarkus-optimization-poc
+    depends_on:
+      sample-spring-native-be:
+        condition: service_healthy
+
+
+networks:
+  quarkus-optimization-poc:
+
+volumes:
+  mariadb-etc:
+  mariadb-data:

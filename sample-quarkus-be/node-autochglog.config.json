@@ -1,0 +1,5 @@
+{
+  "outputFilepath": "RELEASE_NOTES.md",
+  "initialTag": "Upcoming release",
+  "targetBranch": "main"
+}

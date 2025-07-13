@@ -1,0 +1,25 @@
+FROM maven:3.9-amazoncorretto-17-alpine AS dependencies
+
+WORKDIR /dependencies
+
+COPY . .
+
+RUN ./mvnw clean
+# RUN ./mvnw -P native -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:go-offline
+RUN ./mvnw install -P '!with-code-analysis' -P with-observability -P mariadb -D skipTests=true
+
+FROM ghcr.io/graalvm/graalvm-community:17 AS build
+
+WORKDIR /build
+
+COPY . .
+COPY --from=dependencies /root/.m2/repository /root/.m2/repository
+
+WORKDIR /build/sample-spring-boot-be-application
+
+RUN ../mvnw -P native -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:go-offline
+RUN ../mvnw native:compile -P native -P '!with-code-analysis' -P with-observability -P mariadb -D skipTests=true
+
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 AS run
+COPY --from=build build/sample-spring-boot-be-application/target/sample-spring-boot-be-application application
+ENTRYPOINT ["./application"]

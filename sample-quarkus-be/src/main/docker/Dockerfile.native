@@ -1,0 +1,31 @@
+FROM quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21 AS build
+COPY --chown=quarkus:quarkus --chmod=0755 mvnw /code/mvnw
+COPY --chown=quarkus:quarkus .mvn /code/.mvn
+COPY --chown=quarkus:quarkus sample-quarkus-be-application/pom.xml /code/sample-quarkus-be-application/
+COPY --chown=quarkus:quarkus sample-quarkus-be-model/pom.xml /code/sample-quarkus-be-model/
+COPY --chown=quarkus:quarkus pom.xml /code/
+USER quarkus
+WORKDIR /code
+RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:go-offline
+
+COPY src /code/src
+COPY sample-quarkus-be-application/src sample-quarkus-be-application/src
+COPY sample-quarkus-be-model/src sample-quarkus-be-model/src
+
+RUN ./mvnw clean package -P '!with-code-analysis' -P with-observability -P mariadb -D skipTests=true -D native
+
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 AS run
+
+WORKDIR /work/
+
+COPY --from=build /code/sample-quarkus-be-application/target/*-runner /work/application
+
+RUN chmod 775 /work /work/application \
+  && chown -R 1001 /work \
+  && chmod -R "g+rwX" /work \
+  && chown -R 1001:root /work
+
+EXPOSE 8080
+USER 1001
+
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
