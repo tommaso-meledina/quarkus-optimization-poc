@@ -42,3 +42,23 @@ Specifically, the test environment consists of the following components:
 - a small observability stack, most notably a Prometheus instance scraping our application metrics, and a Grafana instance allowing to process and visualize them
 - a set of Locust daemons, simulating traffic directed to the applications
 
+## Running the experiment
+
+Reproducing the experiment _should_ as easy as running
+
+```bash
+docker-compose up
+```
+
+within the [quarkus-optimization-poc-compose](./quarkus-optimization-poc-compose) directory.
+
+That will attempt to build all four test applications concurrently, which might result in issues. If the builds fail,
+execute them one by one, and _then_ run `docker-compose up`:
+
+```bash
+docker-compose build sample-spring-be 
+docker-compose build sample-quarkus-be
+docker-compose build sample-spring-native-be
+docker-compose build sample-quarkus-native-be
+docker-compose up
+```
