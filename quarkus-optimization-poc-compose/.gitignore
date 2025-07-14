@@ -2,10 +2,8 @@ volumes/oracle/*
 !volumes/oracle/.gitkeep
 volumes/mariadb/*
 !volumes/mariadb/.gitkeep
-observability/grafana/*
 observability/grafana/storage/*
 !observability/grafana/storage/.gitkeep
-!observability/grafana/grafana-dashboard.json
 
 .idea
 **/*.DS_Store
