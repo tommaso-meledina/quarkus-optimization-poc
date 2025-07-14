@@ -58,9 +58,9 @@ That will attempt to build all four test applications concurrently, which might 
 execute them one by one, and _then_ run `docker-compose up`:
 
 ```bash
-docker-compose build sample-spring-be 
-docker-compose build sample-quarkus-be
-docker-compose build sample-spring-native-be
-docker-compose build sample-quarkus-native-be
+docker-compose build sample-spring-be && \
+docker-compose build sample-quarkus-be && \
+docker-compose build sample-spring-native-be && \
+docker-compose build sample-quarkus-native-be && \
 docker-compose up
 ```
