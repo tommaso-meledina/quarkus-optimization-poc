@@ -5,5 +5,8 @@ volumes/mariadb/*
 observability/grafana/storage/*
 !observability/grafana/storage/.gitkeep
 
+locust/*
+!locust/locustfile.py
+
 .idea
 **/*.DS_Store
