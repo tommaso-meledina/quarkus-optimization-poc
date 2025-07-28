@@ -93,6 +93,18 @@
                 "value": "Spring Native"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "Test metric invocations (NestJS)"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "NestJS"
+              }
+            ]
           }
         ]
       },
@@ -182,6 +194,23 @@
           "legendFormat": "__auto",
           "range": true,
           "refId": "Test metric invocations (Spring)",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "feif61g3fpnuoe"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "delta(get_dummy_invocations_total{job=\"sample-nestjs-be\"}[1m])",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "Test metric invocations (NestJS)",
           "useBackend": false
         }
       ],
@@ -288,6 +317,22 @@
                 "value": "Spring"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "NestJS CPU Usage"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "displayName",
+                "value": "NestJS"
+              }
+            ]
           }
         ]
       },
@@ -381,6 +426,23 @@
           "range": true,
           "refId": "Spring CPU usage",
           "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "feif61g3fpnuoe"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "rate(process_cpu_seconds_total{job=\"sample-nestjs-be\"}[1m]) * 100",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "NestJS CPU Usage",
+          "useBackend": false
         }
       ],
       "title": "Average CPU usage (last 5 minutes)",
@@ -464,6 +526,22 @@
               {
                 "id": "displayName",
                 "value": "Spring Native"
+              },
+              {
+                "id": "unit",
+                "value": "decmbytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "Memory Used (NestJS)"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "NestJS"
               },
               {
                 "id": "unit",
@@ -563,9 +641,26 @@
           "range": true,
           "refId": "Memory Used (Spring)",
           "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "feif61g3fpnuoe"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sum by(job) (avg_over_time(process_resident_memory_bytes{job=\"sample-nestjs-be\"}[5m])) / 1048576",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "Memory Used (NestJS)",
+          "useBackend": false
         }
       ],
-      "title": "Average JVM memory used (last 5 minutes)",
+      "title": "Average memory used (last 5 minutes)",
       "type": "stat"
     },
     {
@@ -982,5 +1077,5 @@
   "timezone": "browser",
   "title": "BE tech comparison",
   "uid": "eej3efudg46wwc",
-  "version": 35
+  "version": 1
 }

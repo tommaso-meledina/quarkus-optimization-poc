@@ -146,6 +146,33 @@ services:
       mariadb:
         condition: service_healthy
 
+  sample-nestjs-be:
+    build:
+      context: ${SAMPLE_NESTJS_BE_CONTEXT_PATH}
+      dockerfile: ${SAMPLE_NESTJS_BE_DOCKERFILE_PATH}
+    container_name: sample-nestjs-be
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/sample-backend/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 10s
+    environment:
+      - DB_HOST=${DATABASE_HOST}
+      - DB_PORT=${DATABASE_PORT}
+      - DB_USERNAME=${DATASOURCE_USER}
+      - DB_PASSWORD=${DATASOURCE_PASSWORD}
+      - DB_DATABASE=${DATABASE_NAME}
+      - DB_TYPE=mariadb
+      - LOG_LEVEL=debug
+    networks:
+      - quarkus-optimization-poc
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
   grafana:
     image: grafana/grafana-oss
     container_name: grafana
@@ -267,6 +294,21 @@ services:
       sample-spring-native-be:
         condition: service_healthy
 
+  locust-nestjs:
+    image: locustio/locust
+    volumes:
+      - ./locust:/mnt/locust
+    working_dir: /mnt/locust
+    command: -f locustfile.py --headless -u ${LOCUST_TEST_N_USERS} -r ${LOCUST_TEST_RAMP_UP_SLOPE} --run-time ${LOCUST_TEST_DURATION_MINUTES}m
+    environment:
+      - INITIAL_SLEEP_TIME_SECONDS=${LOCUST_TEST_INITIAL_SLEEP_SECONDS}
+      - TARGET_ENDPOINT=http://sample-nestjs-be:3000
+      - TARGET_GET_PATH=/sample-backend/dummies
+    networks:
+      - quarkus-optimization-poc
+    depends_on:
+      sample-spring-native-be:
+        condition: service_healthy
 
 networks:
   quarkus-optimization-poc:
