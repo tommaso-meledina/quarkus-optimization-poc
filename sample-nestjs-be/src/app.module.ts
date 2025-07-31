@@ -9,6 +9,7 @@ import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { DummyModule } from './dummies/dummy.module';
 import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { SnakeCaseNamingStrategy } from './model/snake-case-naming-strategy';
 
 @Module({
   imports: [
@@ -18,7 +19,9 @@ import { MetricsModule } from './metrics/metrics.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (config: ConfigService) => ({
+      useFactory: async (config: ConfigService) => {
+        console.log(`DB_SHOULD_SYNC is ${process.env.DB_SHOULD_SYNC}; aka ${config.get<boolean>('DB_SHOULD_SYNC')}`)
+        return {
         type: config.get<'postgres' | 'mysql' | 'sqlite'>('DB_TYPE'),
         host: config.get<string>('DB_HOST'),
         port: config.get<number>('DB_PORT'),
@@ -26,8 +29,10 @@ import { MetricsModule } from './metrics/metrics.module';
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
-      })
+        synchronize: config.get<string>('DB_SHOULD_SYNC') === 'true',
+        namingStrategy : new SnakeCaseNamingStrategy()
+      };
+      }
     }),
     PrometheusModule.register(),
     DummyModule,
